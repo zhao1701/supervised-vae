@@ -1,20 +1,19 @@
-# f18-mediamath
-DAN networks for advertising data
+# Supervised Variational Autoencoders
 
 ### Project Organization
 
 ------------
     ├── README.md          <- The top-level README for developers using this project.
     │
-    ├── dan                <- Disguise Adversial Network package.
+    ├── svae               <- Supervised VAE package
     │   └── __init__.py    
     │
     ├── data
-    │   ├── intermediate   <- Intermediate data that has been transformed.
+    │   ├── temp           <- Intermediate data that has been transformed.
     │   ├── processed      <- The final, canonical data sets for modeling.
     │   └── raw            <- The original, immutable data dump.
     │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries.
+    ├── experiments        <- Trained and saved models, evaluation results, or model summaries.
     │
     ├── notebooks          <- Jupyter notebooks. Naming convention is a two digit number (for ordering),
     │                         the creator's initials, and a short `-` delimited description,
@@ -31,7 +30,7 @@ DAN networks for advertising data
 
 ### Package Management
 
-Use **pipenv** for project package management instead of **conda**.
+Use conda to maintain a virtual environment.
 
 ### Style Guide
 
@@ -52,7 +51,7 @@ Follow [PEP 8][], when sensible.
 
 #### Line lengths
 
-Don't stress over it. 80-100 characters is fine.
+80 characters maximum per line.
 
 Use parentheses for line continuations.
 
@@ -71,4 +70,4 @@ Use **two** spaces instead of four as Tensorflow code can be very long.
 
 #### Documentation
 
-Use [Google-style comments](https://github.com/google/styleguide/blob/gh-pages/pyguide.md#38-comments-and-docstrings) for documentation.
+Use numpy-style documentation. 
