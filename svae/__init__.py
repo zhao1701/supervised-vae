@@ -330,12 +330,15 @@ class SVAE:
 					x_batch, y_batch, learning_rate, beta)
 
 	def fit_classifier_generator(
-		self, train_generator, num_epochs=5, learning_rate=1e-3, beta=1):
+		self, train_generator, val_generator=None, num_epochs=5, 
+		learning_rate=1e-3, beta=1):
+
 		epoch_counter = -1
 		while epoch_counter < num_epochs:
 			if train_generator.batch_index == 0:
 				epoch_counter += 1
-				print(f'Training classifier, epoch {epoch_counter}...')
+				print(f'Epoch {epoch_counter}...')
+
 			x_batch, y_batch = train_generator.next()
 
 			# One-hot encode labels
@@ -422,6 +425,17 @@ class SVAE:
 		}
 		predictions = self.sess.run(self.y_pred_denoised, feed_dict=feed_dict)
 		return predictions
+
+	def predict_generator(self, generator):
+		y_pred_batches = list()
+		while True:
+			x_batch, y_batch = generator.next()
+			y_pred_batch = self.predict(x_batch)
+			y_pred_batches.append(y_pred_batch)
+			if generator.batch_index == 0:
+				break
+		y_pred_batches = np.row_stack(y_pred_batches)
+		return y_pred_batches
 	
 	def compress(self, x):
 		"""
