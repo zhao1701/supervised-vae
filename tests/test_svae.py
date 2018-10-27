@@ -15,7 +15,8 @@ NUM_CLASSES = 2
 IMG_HEIGHT = 128
 IMG_WIDTH = 128
 IMG_CHANNELS = 3
-CHECKPOINT_DIR = '../experiments/test/'
+CHECKPOINT_DIR = '../experiments/test/checkpoints/'
+LOG_DIR = '../experiments/test/logs/'
 
 
 @pytest.fixture()
@@ -28,9 +29,9 @@ def make_data():
 @pytest.fixture()
 def make_svae():
 	svae = SVAE(
-		CHECKPOINT_DIR,
+		CHECKPOINT_DIR, LOG_DIR,
 		img_shape=(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS),
-		num_latents=32)
+		num_latents=32, num_classes=2)
 	return svae
 
 
