@@ -53,8 +53,10 @@ def test_fit_decoder_generator(make_svae, make_generators):
 	svae = make_svae
 	svae.fit_decoder_generator(train_gen, num_epochs=2)
 
+
 def test_predict_generator(make_svae, make_generators):
 	train_gen, val_gen = make_generators
 	svae = make_svae
-	y_pred = svae.predict_generator(val_gen)
+	y, y_pred = svae.predict_generator(val_gen)
+	assert(y.shape == (NUM_SAMPLES, NUM_CLASSES))
 	assert(y_pred.shape == (NUM_SAMPLES, NUM_CLASSES))

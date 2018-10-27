@@ -428,14 +428,18 @@ class SVAE:
 
 	def predict_generator(self, generator):
 		y_pred_batches = list()
+		y_batches = list()
 		while True:
 			x_batch, y_batch = generator.next()
+			y_batches.append(y_batch)
 			y_pred_batch = self.predict(x_batch)
 			y_pred_batches.append(y_pred_batch)
 			if generator.batch_index == 0:
 				break
 		y_pred_batches = np.row_stack(y_pred_batches)
-		return y_pred_batches
+		y_batches = np.row_stack(y_batches)
+		y_batches = tf.keras.utils.to_categorical(y_batches)
+		return y_batches, y_pred_batches
 	
 	def compress(self, x):
 		"""
