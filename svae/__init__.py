@@ -6,7 +6,7 @@ import tensorflow as tf
 class SVAE:
 	
 	def __init__(
-		self, checkpoint_dir, beta=1, learning_rate=1e-3, 
+		self, checkpoint_dir, log_dir, beta=1, learning_rate=1e-3, 
 		img_shape=(128, 128, 3), num_latents=32, num_classes=2):
 		
 		self.beta = beta
@@ -17,6 +17,7 @@ class SVAE:
 		self.num_classes = num_classes
 		
 		with tf.variable_scope('svae', reuse=tf.AUTO_REUSE):
+            self.global_step = tf.Variable(0, name='global_step', trainable=False)
 			self._create_network()
 			self._create_losses()
 			self._create_optimizers()
@@ -25,6 +26,8 @@ class SVAE:
 		self.sess.run(tf.global_variables_initializer())
 		
 		self._load_checkpoint()
+        
+		self.summary_writer = tf.summary.FileWriter(log_dir, self.sess.graph)
 		
 	def _load_checkpoint(self):
 		"""
@@ -45,6 +48,12 @@ class SVAE:
 				)
 				if not os.path.exists(self.checkpoint_dir):
 						os.mkdir(self.checkpoint_dir)
+        
+        def _save_checkpoint(self):
+		self.saver.save(
+			self.sess,
+			self.checkpoint_dir,
+			global_step=self.global_step)
 						
 	def _create_encoder_network(self, x, reuse=tf.AUTO_REUSE):
 		"""
@@ -194,6 +203,8 @@ class SVAE:
 		return y_logits
 	
 	def _create_losses(self):
+        
+        summary_ops = list() 
 		
 		# Flatten each input image into a vector
 		height, width, channels = self.img_shape
@@ -207,12 +218,16 @@ class SVAE:
 		reconstruction_loss = tf.reduce_sum(reconstruction_loss, 1)
 		self.reconstruction_loss = tf.reduce_mean(
 			reconstruction_loss, name='reconstruction_loss')
+        
+        summary_ops.append(tf.summary.scalar('reconstruction loss', self.reconstruction_loss))
 		
 		# Binary cross-entropy loss
 		cross_entropy_loss = tf.nn.softmax_cross_entropy_with_logits_v2(
 		 labels=self.y_input, logits=self.y_logits)
 		self.cross_entropy_loss = tf.reduce_mean(
 			cross_entropy_loss, name='cross_entropy_loss')
+        
+        summary_ops.append(tf.summary.scalar('cross_entropy loss', self.cross_entropy))
 
 		# Latent loss
 		z_log_sigma_sq = tf.square(self.z_log_sigma)
@@ -220,9 +235,15 @@ class SVAE:
 																			 - tf.square(self.z_mean)
 																			 - tf.exp(z_log_sigma_sq), 1)
 		self.latent_loss = tf.reduce_mean(latent_loss)
+        
+        summary_ops.append(tf.summary.scalar('latest_loss', self.latent_loss))
 		
 		self.classification_loss = \
 			self.cross_entropy_loss + self.beta * self.latent_loss
+        
+        summary_ops.append(tf.summary.scalar('classification_loss', self.classification_loss))
+        
+        self.summary_ops_merged = tf.summary.merge(summary_ops)
 			
 	def _create_optimizers(self):
 		
@@ -235,7 +256,7 @@ class SVAE:
 			tf.GraphKeys.TRAINABLE_VARIABLES, 'svae/decoder')
 		decoder_optimizer = optimizer(self.learning_rate)
 		self.decoder_optimizer = decoder_optimizer.minimize(
-			self.reconstruction_loss, var_list=decoder_weights)
+			self.reconstruction_loss, var_list=decoder_weights, global_step=self.global_step)
 		
 	def _partial_fit_classifier(self, x_batch, y_batch):
 		"""
@@ -255,6 +276,10 @@ class SVAE:
 			self.y_input: y_batch,
 		}
 		_ = self.sess.run(self.classifier_optimizer, feed_dict=feed_dict)
+        
+        step = self.sess.run(self.global_step)
+		summary_str = self.sess.run(self.summary_ops_merged, feed_dict=feed_dict)
+		self.summary_writer.add_summary(summary_str, step)
 
 	def fit_classifier(self, x, y, num_epochs=5, batch_size=256):
 		"""
@@ -299,6 +324,10 @@ class SVAE:
 			self.x_input: x_batch,
 		}
 		_ = self.sess.run(self.decoder_optimizer, feed_dict=feed_dict)
+        
+        step = self.sess.run(self.global_step)
+		summary_str = self.sess.run(self.summary_ops_merged, feed_dict=feed_dict)
+		self.summary_writer.add_summary(summary_str, step)
 	
 	def fit_decoder(self, x, num_epochs=5, batch_size=256):
 		"""
