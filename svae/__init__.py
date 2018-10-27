@@ -328,6 +328,21 @@ class SVAE:
 			for x_batch, y_batch in zip(x_batches, y_batches):
 				self._partial_fit_classifier(
 					x_batch, y_batch, learning_rate, beta)
+
+	def fit_classifier_generator(
+		self, train_generator, num_epochs=5, learning_rate=1e-3, beta=1):
+		epoch_counter = -1
+		while epoch_counter < num_epochs:
+			if train_generator.batch_index == 0:
+				epoch_counter += 1
+				print(f'Training classifier, epoch {epoch_counter}...')
+			x_batch, y_batch = train_generator.next()
+
+			# One-hot encode labels
+			y_batch = tf.keras.utils.to_categorical(y_batch)
+
+			self._partial_fit_classifier(x_batch, y_batch, learning_rate, beta)
+
 				
 	def _partial_fit_decoder(self, x_batch, learning_rate):
 		"""
@@ -375,6 +390,17 @@ class SVAE:
 			# Iteratively train the decoder
 			for x_batch in x_batches:
 				self._partial_fit_decoder(x_batch, learning_rate)
+
+	def fit_decoder_generator(
+		self, train_generator, num_epochs=5, learning_rate=1e-3):
+
+		epoch_counter = -1
+		while epoch_counter < num_epochs:
+			if train_generator.batch_index == 0:
+				epoch_counter += 1
+				print(f'Training classifier, epoch {epoch_counter}...')
+			x_batch, y_batch = train_generator.next()
+			self._partial_fit_decoder(x_batch, learning_rate)
 				
 	def predict(self, x):
 		"""
