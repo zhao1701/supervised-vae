@@ -6,11 +6,9 @@ import tensorflow as tf
 class SVAE:
 	
 	def __init__(
-		self, checkpoint_dir, log_dir, beta=1, learning_rate=1e-3, 
-		img_shape=(128, 128, 3), num_latents=32, num_classes=2):
+		self, checkpoint_dir, log_dir, img_shape=(128, 128, 3), num_latents=32, 
+		num_classes=2):
 		
-		self.beta = beta
-		self.learning_rate = learning_rate
 		self.checkpoint_dir = checkpoint_dir
 		self.img_shape = img_shape
 		self.num_latents = num_latents
@@ -169,6 +167,10 @@ class SVAE:
 			tf.float32, shape=[None, height, width, channels], name='x_input')
 		self.y_input = tf.placeholder(
 			tf.float32, shape=[None, 2], name='y_input')
+		self.learning_rate = tf.placeholder(
+			tf.float32, name='learning_rate')
+		self.beta = tf.placeholder(
+			tf.float32, name='beta')
 
 		# Get tensors for latent distribution parameters
 		self.z_mean, self.z_log_sigma = self._create_encoder_network(self.x_input)
@@ -258,7 +260,7 @@ class SVAE:
 		self.decoder_optimizer = decoder_optimizer.minimize(
 			self.reconstruction_loss, var_list=decoder_weights, global_step=self.global_step)
 		
-	def _partial_fit_classifier(self, x_batch, y_batch):
+	def _partial_fit_classifier(self, x_batch, y_batch, learning_rate, beta):
 		"""
 		Train encoder and classifier networks based on minibatch
 		of training data.
@@ -274,6 +276,8 @@ class SVAE:
 		feed_dict = {
 			self.x_input: x_batch,
 			self.y_input: y_batch,
+			self.learning_rate: learning_rate,
+			self.beta: beta
 		}
 		_ = self.sess.run(self.classifier_optimizer, feed_dict=feed_dict)
         
@@ -281,7 +285,9 @@ class SVAE:
 		summary_str = self.sess.run(self.summary_ops_merged, feed_dict=feed_dict)
 		self.summary_writer.add_summary(summary_str, step)
 
-	def fit_classifier(self, x, y, num_epochs=5, batch_size=256):
+	def fit_classifier(
+		self, x, y, num_epochs=5, batch_size=256,
+		learning_rate=1e-3, beta=1):
 		"""
 		Train encoder and classifier networks.
 
@@ -309,9 +315,10 @@ class SVAE:
 			print(f'Training epoch {epoch}...')
 			# Iteratively train the classifier
 			for x_batch, y_batch in zip(x_batches, y_batches):
-				self._partial_fit_classifier(x_batch, y_batch)
+				self._partial_fit_classifier(
+					x_batch, y_batch, learning_rate, beta)
 				
-	def _partial_fit_decoder(self, x_batch):
+	def _partial_fit_decoder(self, x_batch, learning_rate):
 		"""
 		Train decoder network based on minibatch of input images.
 
@@ -322,6 +329,7 @@ class SVAE:
 		"""
 		feed_dict = {
 			self.x_input: x_batch,
+			self.learning_rate: learning_rate,
 		}
 		_ = self.sess.run(self.decoder_optimizer, feed_dict=feed_dict)
         
@@ -329,7 +337,7 @@ class SVAE:
 		summary_str = self.sess.run(self.summary_ops_merged, feed_dict=feed_dict)
 		self.summary_writer.add_summary(summary_str, step)
 	
-	def fit_decoder(self, x, num_epochs=5, batch_size=256):
+	def fit_decoder(self, x, num_epochs=5, batch_size=256, learning_rate=1e-3):
 		"""
 		Train decoder network.
 
@@ -354,7 +362,7 @@ class SVAE:
 			print(f'Training epoch {epoch}...')
 			# Iteratively train the decoder
 			for x_batch in x_batches:
-				self._partial_fit_decoder(x_batch)
+				self._partial_fit_decoder(x_batch, learning_rate)
 				
 	def predict(self, x):
 		"""
