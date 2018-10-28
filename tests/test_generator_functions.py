@@ -16,7 +16,7 @@ NUM_CLASSES = 2
 IMG_HEIGHT = 128
 IMG_WIDTH = 128
 IMG_CHANNELS = 3
-NUM_SAMPLES = 1000
+NUM_SAMPLES = 200
 CHECKPOINT_DIR = '../experiments/test/checkpoints/'
 LOG_DIR = '../experiments/test/logs/'
 TRAIN_DIR = '../data/processed/test/'
@@ -29,8 +29,8 @@ def make_generators():
 	X = np.random.randn(NUM_SAMPLES, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
 	y = np.random.choice(np.arange(NUM_CLASSES), NUM_SAMPLES)
 
-	train_datagen = datagen.flow(X, y, batch_size=64)
-	validation_datagen = datagen.flow(X, y, batch_size=64)
+	train_datagen = datagen.flow(X, y, batch_size=32)
+	validation_datagen = datagen.flow(X, y, batch_size=32)
 	return train_datagen, validation_datagen
 
 @pytest.fixture()
@@ -45,7 +45,7 @@ def make_svae():
 def test_fit_classifier_generator(make_svae, make_generators):
 	train_gen, val_gen = make_generators
 	svae = make_svae
-	svae.fit_classifier_generator(train_gen, num_epochs=2)
+	svae.fit_classifier_generator(train_gen,val_gen, num_epochs=2)
 
 
 def test_fit_decoder_generator(make_svae, make_generators):
@@ -60,3 +60,12 @@ def test_predict_generator(make_svae, make_generators):
 	y, y_pred = svae.predict_generator(val_gen)
 	assert(y.shape == (NUM_SAMPLES, NUM_CLASSES))
 	assert(y_pred.shape == (NUM_SAMPLES, NUM_CLASSES))
+
+def test_calc_overall_metrics(make_svae, make_generators):
+	train_gen, val_gen = make_generators
+	svae = make_svae
+	acc,loss = svae._calc_overall_metrics(train_gen)
+	assert(0 <= acc <= 1)
+	assert(loss > 0)
+
+

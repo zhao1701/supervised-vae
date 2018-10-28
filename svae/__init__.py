@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import tensorflow as tf
+from sklearn.metrics import accuracy_score
 
 class SVAE:
 	
@@ -329,15 +330,73 @@ class SVAE:
 				self._partial_fit_classifier(
 					x_batch, y_batch, learning_rate, beta)
 
+	def _calc_overall_metrics(self,data_generator):
+		"""
+		calculate accuracy and loss metrics for input data,
+		based on the existing network in current session
+
+		Parameters
+		----------
+		data_generator: a generator on either train or val dataset
+
+		Return
+		---------
+		acc: accuracy score over whole dataset
+		loss: loss over whole dataset
+		"""
+		batch_accuracy, batch_accuracy_op = tf.metrics.accuracy(predictions = self.y_pred_denoised,
+											 labels = self.y_input,name="my_metric")
+		running_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="my_metric")
+
+		# Define initializer to initialize/reset running variables
+		running_vars_initializer = tf.variables_initializer(var_list=running_vars)
+		self.sess.run(running_vars_initializer)
+
+		loss_list = []
+
+		while True:
+			x_batch, y_batch = data_generator.next()
+			y_batch_cat = tf.keras.utils.to_categorical(y_batch)
+
+			#calulate accuracy
+			self.sess.run(batch_accuracy_op,
+								feed_dict={self.x_input: x_batch, self.y_input: y_batch_cat})
+
+			#calculate loss
+			batch_loss_realized = self.sess.run(self.cross_entropy_loss,
+								feed_dict={self.x_input: x_batch, self.y_input: y_batch_cat})
+			loss_list.append(batch_loss_realized)
+
+			if data_generator.batch_index == 0:
+				break
+		acc = self.sess.run(batch_accuracy)
+		loss = np.mean(loss_list)
+
+		return acc,loss
+
+
 	def fit_classifier_generator(
 		self, train_generator, val_generator=None, num_epochs=5, 
 		learning_rate=1e-3, beta=1):
+		"""
+		Train encoder and classifier networks with generators
+
+		Parameters
+		----------
+		train_generator: a generator on training data
+		val_generator: a generator on validation data
+		num_epochs: number of passes we specify for the whole dataset
+		"""
 
 		epoch_counter = -1
 		while epoch_counter < num_epochs:
 			if train_generator.batch_index == 0:
 				epoch_counter += 1
-				print(f'Epoch {epoch_counter}...')
+				train_acc, train_loss = self._calc_overall_metrics(train_generator)
+				val_acc, val_loss = self._calc_overall_metrics(val_generator)
+				print(f'''Epoch {epoch_counter}, 
+						train accuracy is {train_acc}, train loss is {train_loss};
+						validation accuracy is {val_acc}, validation loss is {val_loss}''')
 
 			x_batch, y_batch = train_generator.next()
 
