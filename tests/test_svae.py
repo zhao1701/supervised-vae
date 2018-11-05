@@ -1,6 +1,7 @@
 import os
 import sys
 import pytest
+import shutil
 
 import numpy as np
 
@@ -17,7 +18,13 @@ IMG_WIDTH = 128
 IMG_CHANNELS = 3
 CHECKPOINT_DIR = '../experiments/test/checkpoints/'
 LOG_DIR = '../experiments/test/logs/'
+# TRAVERSAL_DIR = '../experiments/test/traversal_check/'
 
+directories = [CHECKPOINT_DIR, LOG_DIR]
+for directory in directories:
+	if os.path.isdir(directory):
+		shutil.rmtree(directory)
+		os.makedirs(directory)
 
 @pytest.fixture()
 def make_data():
