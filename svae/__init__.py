@@ -20,6 +20,7 @@ class SVAE:
 			self._create_network()
 			self._create_losses()
 			self._create_optimizers()
+			self._create_summaries()
 		
 		self.sess = tf.Session()
 		self.sess.run(tf.global_variables_initializer())
@@ -136,11 +137,6 @@ class SVAE:
 			x = tf.layers.Conv2DTranspose(
 				3, 4, 2, 'same', activation=None,)(z)
 
-			# Flatten the deconvolved tensors into vectors
-#       height, width, channels = self.img_shape
-#       x_out_logit = tf.reshape(
-#         x, shape=(-1, height*width*channels), name='x_out_logit')
-
 			x_out_logit = tf.identity(x, name='x_out_logit')
 
 			return x_out_logit
@@ -207,9 +203,6 @@ class SVAE:
 		return y_logits
 	
 	def _create_losses(self):
-				
-		summary_ops_classifier = list()
-		summary_ops_decoder = list()
 
 		# Flatten each input image into a vector
 		height, width, channels = self.img_shape
@@ -223,9 +216,6 @@ class SVAE:
 		reconstruction_loss = tf.reduce_sum(reconstruction_loss, 1)
 		self.reconstruction_loss = tf.reduce_mean(
 			reconstruction_loss, name='reconstruction_loss')
-				
-		summary_ops_decoder.append(
-			tf.summary.scalar('reconstruction loss', self.reconstruction_loss))
 		
 		# Binary cross-entropy loss
 		cross_entropy_loss = tf.nn.softmax_cross_entropy_with_logits_v2(
@@ -233,28 +223,34 @@ class SVAE:
 		self.cross_entropy_loss = tf.reduce_mean(
 			cross_entropy_loss, name='cross_entropy_loss')
 
-		summary_ops_classifier.append(
-			tf.summary.scalar('cross_entropy loss', self.cross_entropy_loss))
-
 		# Latent loss
 		z_log_sigma_sq = tf.square(self.z_log_sigma)
 		latent_loss = -0.5 * tf.reduce_sum(1 + z_log_sigma_sq
 																			 - tf.square(self.z_mean)
 																			 - tf.exp(z_log_sigma_sq), 1)
 		self.latent_loss = tf.reduce_mean(latent_loss)
-				
-		summary_ops_classifier.append(
-			tf.summary.scalar('latest_loss', self.latent_loss))
 		
 		self.classification_loss = \
 			self.cross_entropy_loss + self.beta * self.latent_loss
-				
-		summary_ops_classifier.append(
-			tf.summary.scalar('classification_loss', self.classification_loss))
-				
+
+	def _create_summaries(self):
+		cross_entropy_loss_summary = tf.summary.scalar(
+			'cross-entropy loss', self.cross_entropy_loss)
+		latent_loss_summary = tf.summary.scalar(
+			'latent loss', self.latent_loss)
+		classification_loss_summary = tf.summary.scalar(
+			'classification loss', self.classification_loss)
+		summary_ops_classifier = [
+			cross_entropy_loss_summary,
+			latent_loss_summary,
+			classification_loss_summary]
+
+		reconstruction_loss_summary = tf.summary.scalar(
+			'reconstruction loss', self.reconstruction_loss)
+		summary_ops_decoder = [reconstruction_loss_summary]
+
 		self.summary_ops_classifier_merged = tf.summary.merge(
 			summary_ops_classifier)
-
 		self.summary_ops_decoder_merged = tf.summary.merge(
 			summary_ops_decoder)
 			
