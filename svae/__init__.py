@@ -7,8 +7,8 @@ from sklearn.metrics import accuracy_score
 class SVAE:
 	
 	def __init__(
-		self, checkpoint_dir, log_dir, img_shape=(128, 128, 3), num_latents=32, 
-		num_classes=2):
+		self, checkpoint_dir, log_dir, img_shape=(128, 128, 3),
+		num_latents=32, num_classes=2):
 		
 		self.checkpoint_dir = checkpoint_dir
 		self.img_shape = img_shape
@@ -425,7 +425,46 @@ class SVAE:
 		summary_str = self.sess.run(
 			self.summary_ops_decoder_merged, feed_dict=feed_dict)
 		self.summary_writer.add_summary(summary_str, step)
-	
+
+	def _check_latent_traversals(self, image):
+		"""
+		Performs latent traversals on a single image and sends
+		said traversals to Tensorboard.
+
+		Parameters
+		==========
+		image : numpy array, shape = (height, width, channels)
+		"""
+
+		image = [image] # Gives input image a batch dimension
+		latent_means = self.compress(image) 
+		latent_means = latent_means.squeeze() # Removes batch dimension
+		
+		traversals = list()
+		for index in range(len(latent_means)):
+			latent_means_copy = latent_means[:]
+			traversal = list()
+			for new_val in np.linspace(-4, 4, 9):
+				latent_means_copy[index] = new_val
+				latent_means_batch = [latent_means_copy]
+				reconstruction = self.reconstruct_latents(latent_means_batch)
+				reconstruction = reconstruction.squeeze()
+				traversal.append(reconstruction)
+			# Combine reconstructions into one row of images (a traversal)
+			traversal = np.column_stack(traversal)
+			traversals.append(traversal)
+		# Combine traversals, resulting in a matrix of images
+		traversals = np.row_stack(traversals)
+		traversals = np.expand_dims(traversals, 0) # Add batch dimension
+		traversals = tf.constant(traversals, name='traversals')
+
+		# Send traversal matrix to Tensorboard
+		traversals_op = tf.summary.image(
+			'traversal_check',traversals, max_outputs=1)
+		summary_str = self.sess.run(traversals_op)
+		step = self.sess.run(self.global_step)
+		self.summary_writer.add_summary(summary_str, step)
+
 	def fit_decoder(self, x, num_epochs=5, batch_size=256, learning_rate=1e-3):
 		"""
 		Train decoder network.
@@ -463,6 +502,9 @@ class SVAE:
 				print(f'Training classifier, epoch {epoch_counter}...')
 			x_batch, y_batch = train_generator.next()
 			self._partial_fit_decoder(x_batch, learning_rate)
+
+			check_image = x_batch[0]
+			self._check_latent_traversals(check_image)
 				
 	def predict(self, x):
 		"""
