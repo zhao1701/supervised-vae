@@ -54,11 +54,18 @@ def test_fit_decoder(make_svae, make_data):
 	svae.fit_decoder(X, num_epochs=3)
 
 
-def test_predict(make_svae, make_data):
+def test_predict_proba(make_svae, make_data):
 	X, y = make_data
 	svae = make_svae
-	predictions = svae.predict(X)
+	predictions = svae.predict_proba(X)
 	assert(predictions.shape == (NUM_SAMPLES, NUM_CLASSES))
+
+def test_predict_labels(make_svae,make_data):
+	X, y = make_data
+	svae = make_svae
+	probabilities = svae.predict_proba(X)
+	precitions = svae.predict_label(probabilities)
+	assert(precitions.shape == (NUM_SAMPLES, NUM_CLASSES))
 
 
 def test_compress(make_svae, make_data):

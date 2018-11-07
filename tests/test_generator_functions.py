@@ -61,6 +61,7 @@ def test_predict_generator(make_svae, make_generators):
 	assert(y.shape == (NUM_SAMPLES, NUM_CLASSES))
 	assert(y_pred.shape == (NUM_SAMPLES, NUM_CLASSES))
 
+
 def test_calc_overall_metrics(make_svae, make_generators):
 	train_gen, val_gen = make_generators
 	svae = make_svae

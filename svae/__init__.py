@@ -184,6 +184,7 @@ class SVAE:
 		# distribution.
 		y_logits_denoised = self._create_classifier_network(self.z_mean)
 		self.y_pred_denoised = tf.nn.softmax(y_logits_denoised)
+		self.y_pred_labels = self.predict_label(self.y_pred_denoised)
 
 		# Using latent sample, create reconstructed pixel values. These noisy
 		# reconstructions are only used to calculate loss when training the model.
@@ -270,7 +271,7 @@ class SVAE:
 
 	def _create_metrics(self):
 
-		self.batch_accuracy, self.batch_accuracy_update = tf.metrics.accuracy(predictions=self.y_pred_denoised,
+		self.batch_accuracy, self.batch_accuracy_update = tf.metrics.accuracy(predictions=self.y_pred_labels,
 																	labels=self.y_input, name="accuracy")
 		self.running_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope=tf.get_variable_scope().name)
 		print(self.running_vars)
@@ -515,7 +516,7 @@ class SVAE:
 			check_image = x_batch[0]
 			self._check_latent_traversals(check_image)
 				
-	def predict(self, x):
+	def predict_proba(self, x):
 		"""
 		Given a minibatch of input images, predict classes.
 
@@ -536,19 +537,44 @@ class SVAE:
 		predictions = self.sess.run(self.y_pred_denoised, feed_dict=feed_dict)
 		return predictions
 
-	def predict_generator(self, generator):
+	def predict_label(self,y_proba):
+		"""
+		Generate predicted labels given probabilities
+
+		Parameters
+		==========
+		y_proba : array-like, shape = [batch_size,num_classes]
+			A matrix of <batch_size> probabilities.
+
+		Returns
+		=======
+		prediction_labels : array, shape = [batch_size, num_classes]
+			A matrix of <batch_size> predicted labels.
+		"""
+		y_predict_label = y_proba >=0.5
+		return y_predict_label
+
+	def predict_generator(self, generator, labels = True):
 		y_pred_batches = list()
 		y_batches = list()
+
 		while True:
 			x_batch, y_batch = generator.next()
 			y_batch = tf.keras.utils.to_categorical(y_batch, num_classes=2)
 			y_batches.append(y_batch)
-			y_pred_batch = self.predict(x_batch)
-			y_pred_batches.append(y_pred_batch)
+			y_pred_batch_proba = self.predict_proba(x_batch)
+			if labels == False:
+				y_pred_batches.append(y_pred_batch_proba)
+			else:
+				y_pred_batch_labels = self.predict_label(y_pred_batch_proba)
+				y_pred_batch_labels = y_pred_batch_labels.astype(int)
+				y_pred_batches.append(y_pred_batch_labels)
+
 			if generator.batch_index == 0:
 				break
 		y_pred_batches = np.row_stack(y_pred_batches)
 		y_batches = np.row_stack(y_batches)
+
 		return y_batches, y_pred_batches
 	
 	def compress(self, x):
