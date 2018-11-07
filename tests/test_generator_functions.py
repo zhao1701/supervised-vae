@@ -45,7 +45,7 @@ def make_svae():
 def test_fit_classifier_generator(make_svae, make_generators):
 	train_gen, val_gen = make_generators
 	svae = make_svae
-	svae.fit_classifier_generator(train_gen,val_gen, num_epochs=2)
+	svae.fit_classifier_generator(train_gen, val_gen, num_epochs=2)
 
 
 def test_fit_decoder_generator(make_svae, make_generators):

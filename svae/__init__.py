@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from sklearn.metrics import accuracy_score
 
 class SVAE:
 	
@@ -21,9 +20,11 @@ class SVAE:
 			self._create_losses()
 			self._create_optimizers()
 			self._create_summaries()
+			self._create_metrics()
 		
 		self.sess = tf.Session()
 		self.sess.run(tf.global_variables_initializer())
+
 		
 		self._load_checkpoint()
 				
@@ -266,7 +267,17 @@ class SVAE:
 		decoder_optimizer = optimizer(self.learning_rate)
 		self.decoder_optimizer = decoder_optimizer.minimize(
 			self.reconstruction_loss, var_list=decoder_weights, global_step=self.global_step)
-		
+
+	def _create_metrics(self):
+
+		self.batch_accuracy, self.batch_accuracy_update = tf.metrics.accuracy(predictions=self.y_pred_denoised,
+																	labels=self.y_input, name="accuracy")
+		self.running_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope=tf.get_variable_scope().name)
+		print(self.running_vars)
+		# Define initializer to initialize/reset running variables
+		self.running_vars_initializer = tf.variables_initializer(var_list=self.running_vars)
+
+
 	def _partial_fit_classifier(self, x_batch, y_batch, learning_rate, beta):
 		"""
 		Train encoder and classifier networks based on minibatch
@@ -328,47 +339,49 @@ class SVAE:
 
 	def _calc_overall_metrics(self,data_generator):
 		"""
-		calculate accuracy and loss metrics for input data,
-		based on the existing network in current session
+		Calculate accuracy and loss metrics for input data,
+		based on the existing network in current session.
 
 		Parameters
 		----------
-		data_generator: a generator on either train or val dataset
+		data_generator : python generator
+			a generator on either train or val dataset.
 
 		Return
 		---------
-		acc: accuracy score over whole dataset
-		loss: loss over whole dataset
+		acc : scaler
+			accuracy score over whole dataset.
+		loss : scaler
+			loss over whole dataset.
 		"""
-		batch_accuracy, batch_accuracy_op = tf.metrics.accuracy(predictions = self.y_pred_denoised,
-											 labels = self.y_input,name="my_metric")
-		running_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="my_metric")
 
-		# Define initializer to initialize/reset running variables
-		running_vars_initializer = tf.variables_initializer(var_list=running_vars)
-		self.sess.run(running_vars_initializer)
-
+		_ = self.sess.run(self.running_vars_initializer)
 		loss_list = []
 
 		while True:
 			x_batch, y_batch = data_generator.next()
 			y_batch_cat = tf.keras.utils.to_categorical(y_batch)
 
-			#calulate accuracy
-			self.sess.run(batch_accuracy_op,
-								feed_dict={self.x_input: x_batch, self.y_input: y_batch_cat})
+			feed_dict = {
+				self.x_input: x_batch,
+				self.y_input: y_batch_cat
+			}
+			# Calulate accuracy
+			self.sess.run(self.batch_accuracy_update,
+								feed_dict=feed_dict)
 
-			#calculate loss
+			# Calculate loss
 			batch_loss_realized = self.sess.run(self.cross_entropy_loss,
-								feed_dict={self.x_input: x_batch, self.y_input: y_batch_cat})
+								feed_dict=feed_dict)
+
 			loss_list.append(batch_loss_realized)
 
 			if data_generator.batch_index == 0:
 				break
-		acc = self.sess.run(batch_accuracy)
+		acc = self.sess.run(self.batch_accuracy)
 		loss = np.mean(loss_list)
 
-		return acc,loss
+		return acc, loss
 
 
 	def fit_classifier_generator(
