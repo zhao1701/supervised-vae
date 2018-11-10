@@ -27,8 +27,9 @@ class SVAE:
 
 		
 		self._load_checkpoint()
-				
 		self.summary_writer = tf.summary.FileWriter(log_dir, self.sess.graph)
+		self.best_val_acc = -float('inf')
+		self.best_val_recon_loss = float('inf')
 		
 	def _load_checkpoint(self):
 		"""
@@ -259,6 +260,11 @@ class SVAE:
 			'train accuracy', self.accuracy)
 		self.validation_accuracy_summary_op = tf.summary.scalar(
 			'validation accuracy', self.accuracy)
+
+		self.traversals = tf.placeholder(
+			tf.float32, (None, None, None, 3))
+		self.traversals_summary_op = tf.summary.image(
+			'traversal_check', self.traversals, max_outputs=1)
 			
 	def _create_optimizers(self):
 		
@@ -433,6 +439,13 @@ class SVAE:
 					self.summary_writer.add_summary(summary_str, step)
 					print('Validation accuracy = {:.4f}'.format(val_acc), end='\t')
 					print('Validation loss = {:.4f}'.format(val_loss))
+					if val_acc > self.best_val_acc:
+						print('Best validation accuracy improved from {} to {}'.format(
+							self.best_val_acc, val_acc))
+						self.best_val_acc = val_acc
+						self._save_checkpoint()
+				else:
+					self._save_checkpoint()
 
 			x_batch, y_batch = train_generator.next()
 			assert(not np.isnan(x_batch).any() and not np.isnan(y_batch).any())
@@ -493,12 +506,11 @@ class SVAE:
 		# Combine traversals, resulting in a matrix of images
 		traversals = np.row_stack(traversals)
 		traversals = np.expand_dims(traversals, 0) # Add batch dimension
-		traversals = tf.constant(traversals, name='traversals')
 
 		# Send traversal matrix to Tensorboard
-		traversals_op = tf.summary.image(
-			'traversal_check',traversals, max_outputs=1)
-		summary_str = self.sess.run(traversals_op)
+		summary_str = self.sess.run(
+			self.traversals_summary_op,
+			feed_dict={self.traversals: traversals})
 		step = self.sess.run(self.global_step)
 		self.summary_writer.add_summary(summary_str, step)
 
@@ -536,12 +548,11 @@ class SVAE:
 		while epoch_counter < num_epochs:
 			if train_generator.batch_index == 0:
 				epoch_counter += 1
-				print(f'Training classifier, epoch {epoch_counter}...')
+				print(f'Training decoder, epoch {epoch_counter}...')
+				check_image = x_batch[0]
+				self._check_latent_traversals(check_image)
 			x_batch, y_batch = train_generator.next()
 			self._partial_fit_decoder(x_batch, learning_rate)
-
-			check_image = x_batch[0]
-			self._check_latent_traversals(check_image)
 				
 	def predict_proba(self, x):
 		"""
