@@ -359,7 +359,7 @@ class SVAE:
 				self._partial_fit_classifier(
 					x_batch, y_batch, learning_rate, beta)
 
-	def _calc_overall_metrics(self, data_generator):
+	def _calc_classifier_metrics(self, data_generator):
 		"""
 		Calculate accuracy and loss metrics for input data,
 		based on the existing network in current session.
@@ -404,6 +404,43 @@ class SVAE:
 
 		return acc, loss
 
+	def _calc_decoder_metrics(self, data_generator):
+		"""
+		Calculate loss metrics for input data,
+		based on the existing decoder network in current session.
+
+		Parameters
+		----------
+		data_generator : keras ImageDataGenerator
+			A generator on either train or val dataset.
+
+		Return
+		---------
+		loss : float
+			Reconstruction loss calculated over whole epoch.
+		"""
+
+		losses = list()
+
+		while True:
+			x_batch, y_batch = data_generator.next()
+
+			feed_dict = {
+				self.x_input: x_batch
+			}
+
+			# Calculate loss
+			reconstruction_loss = self.sess.run(
+				self.reconstruction_loss, feed_dict=feed_dict)
+			losses.append(reconstruction_loss)
+
+			if data_generator.batch_index == 0:
+				break
+
+		loss = np.mean(losses)
+
+		return loss
+
 	def fit_classifier_generator(
 		self, train_generator, val_generator=None, num_epochs=5, 
 		learning_rate=1e-4, beta=1):
@@ -422,23 +459,23 @@ class SVAE:
 			# print('batch_index:', train_generator.batch_index)
 			if train_generator.batch_index == 0:
 				epoch_counter += 1
-				print('Epoch {}'.format(epoch_counter))
+				print('Training classifier, epoch {}'.format(epoch_counter))
 
-				train_acc, train_loss = self._calc_overall_metrics(train_generator)
+				train_acc, train_loss = self._calc_classifier_metrics(train_generator)
 				print('Train accuracy = {:.4f}'.format(train_acc), end='\t')
 				print('Train loss = {:.4f}'.format(train_loss))
 
 				step = self.sess.run(self.global_step)
-				print('step:', step)
 				summary_str = self.sess.run(self.train_accuracy_summary_op)
 				self.summary_writer.add_summary(summary_str, step)
 
 				if val_generator is not None:
-					val_acc, val_loss = self._calc_overall_metrics(val_generator)
+					val_acc, val_loss = self._calc_classifier_metrics(val_generator)
 					summary_str = self.sess.run(self.validation_accuracy_summary_op)
 					self.summary_writer.add_summary(summary_str, step)
 					print('Validation accuracy = {:.4f}'.format(val_acc), end='\t')
 					print('Validation loss = {:.4f}'.format(val_loss))
+
 					if val_acc > self.best_val_acc:
 						print('Best validation accuracy improved from {} to {}'.format(
 							self.best_val_acc, val_acc))
@@ -542,7 +579,8 @@ class SVAE:
 				self._partial_fit_decoder(x_batch, learning_rate)
 
 	def fit_decoder_generator(
-		self, train_generator, num_epochs=5, learning_rate=1e-3):
+		self, train_generator, val_generator=None,
+		num_epochs=5, learning_rate=1e-3):
 
 		epoch_counter = -1
 		while epoch_counter < num_epochs:
@@ -551,6 +589,14 @@ class SVAE:
 				print(f'Training decoder, epoch {epoch_counter}...')
 				check_image = x_batch[0]
 				self._check_latent_traversals(check_image)
+
+				train_loss = self._calc_decoder_metrics(train_generator)
+				print('Train loss = {:.4f}'.format(train_loss))
+
+				if val_generator is not None:
+					val_loss = self._calc_decoder_metrics(val_generator)
+					print('Validation loss = {:.4f}'.format(val_loss))
+
 			x_batch, y_batch = train_generator.next()
 			self._partial_fit_decoder(x_batch, learning_rate)
 				
