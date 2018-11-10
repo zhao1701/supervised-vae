@@ -19,8 +19,8 @@ class SVAE:
 			self._create_network()
 			self._create_losses()
 			self._create_optimizers()
-			self._create_summaries()
 			self._create_metrics()
+			self._create_summaries()
 		
 		self.sess = tf.Session()
 		self.sess.run(tf.global_variables_initializer())
@@ -85,7 +85,7 @@ class SVAE:
 
 			# Final convolutions downsize each channels' dimensions to a 1x1 patch,
 			# resulting in a final tensors with shape (batch_size, 1, 1, num_latents)
-			z_mean = tf.layers.Conv2D(self.num_latents, 1)(x) 
+			z_mean = tf.layers.Conv2D(self.num_latents, 1)(x)
 
 			# log_sigma used for numerical stability
 			z_log_sigma = tf.layers.Conv2D(self.num_latents, 1)(x)
@@ -255,29 +255,37 @@ class SVAE:
 			summary_ops_classifier)
 		self.summary_ops_decoder_merged = tf.summary.merge(
 			summary_ops_decoder)
+		self.train_accuracy_summary_op = tf.summary.scalar(
+			'train accuracy', self.accuracy)
+		self.validation_accuracy_summary_op = tf.summary.scalar(
+			'validation accuracy', self.accuracy)
 			
 	def _create_optimizers(self):
 		
 		optimizer = tf.train.AdamOptimizer
 		classifier_optimizer = optimizer(self.learning_rate)
 		self.classifier_optimizer = classifier_optimizer.minimize(
-			self.classification_loss)
+			self.classification_loss,
+			global_step=self.global_step)
 		
 		decoder_weights = tf.get_collection(
 			tf.GraphKeys.TRAINABLE_VARIABLES, 'svae/decoder')
 		decoder_optimizer = optimizer(self.learning_rate)
 		self.decoder_optimizer = decoder_optimizer.minimize(
-			self.reconstruction_loss, var_list=decoder_weights, global_step=self.global_step)
+			self.reconstruction_loss, var_list=decoder_weights,
+			global_step=self.global_step)
 
 	def _create_metrics(self):
 
-		self.batch_accuracy, self.batch_accuracy_update = tf.metrics.accuracy(predictions=self.y_pred_labels,
-																	labels=self.y_input, name="accuracy")
-		self.running_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope=tf.get_variable_scope().name)
-		print(self.running_vars)
+		self.accuracy, self.accuracy_update = tf.metrics.accuracy(
+			predictions=self.y_pred_labels,
+			labels=self.y_input, name="accuracy")
+		self.running_vars = tf.get_collection(
+			tf.GraphKeys.LOCAL_VARIABLES, scope=tf.get_variable_scope().name)
+		# print(self.running_vars)
 		# Define initializer to initialize/reset running variables
-		self.running_vars_initializer = tf.variables_initializer(var_list=self.running_vars)
-
+		self.running_vars_initializer = tf.variables_initializer(
+			var_list=self.running_vars)
 
 	def _partial_fit_classifier(self, x_batch, y_batch, learning_rate, beta):
 		"""
@@ -304,6 +312,13 @@ class SVAE:
 		summary_str = self.sess.run(
 			self.summary_ops_classifier_merged, feed_dict=feed_dict)
 		self.summary_writer.add_summary(summary_str, step)
+
+		# Debug
+		# print(self.sess.run(self.z_mean_test, feed_dict=feed_dict))
+		# print(
+		# 	'cross_entropy_loss:',
+		# 	self.sess.run(self.cross_entropy_loss, feed_dict=feed_dict)
+		# )
 
 	def fit_classifier(
 		self, x, y, num_epochs=5, batch_size=256,
@@ -338,7 +353,7 @@ class SVAE:
 				self._partial_fit_classifier(
 					x_batch, y_batch, learning_rate, beta)
 
-	def _calc_overall_metrics(self,data_generator):
+	def _calc_overall_metrics(self, data_generator):
 		"""
 		Calculate accuracy and loss metrics for input data,
 		based on the existing network in current session.
@@ -350,9 +365,9 @@ class SVAE:
 
 		Return
 		---------
-		acc : scaler
+		acc : scalar
 			accuracy score over whole dataset.
-		loss : scaler
+		loss : scalar
 			loss over whole dataset.
 		"""
 
@@ -368,26 +383,24 @@ class SVAE:
 				self.y_input: y_batch_cat
 			}
 			# Calulate accuracy
-			self.sess.run(self.batch_accuracy_update,
+			self.sess.run(self.accuracy_update,
 								feed_dict=feed_dict)
 
 			# Calculate loss
 			batch_loss_realized = self.sess.run(self.cross_entropy_loss,
 								feed_dict=feed_dict)
-
 			loss_list.append(batch_loss_realized)
 
 			if data_generator.batch_index == 0:
 				break
-		acc = self.sess.run(self.batch_accuracy)
+		acc = self.sess.run(self.accuracy)
 		loss = np.mean(loss_list)
 
 		return acc, loss
 
-
 	def fit_classifier_generator(
 		self, train_generator, val_generator=None, num_epochs=5, 
-		learning_rate=1e-3, beta=1):
+		learning_rate=1e-4, beta=1):
 		"""
 		Train encoder and classifier networks with generators
 
@@ -400,15 +413,29 @@ class SVAE:
 
 		epoch_counter = -1
 		while epoch_counter < num_epochs:
+			# print('batch_index:', train_generator.batch_index)
 			if train_generator.batch_index == 0:
 				epoch_counter += 1
+				print('Epoch {}'.format(epoch_counter))
+
 				train_acc, train_loss = self._calc_overall_metrics(train_generator)
-				val_acc, val_loss = self._calc_overall_metrics(val_generator)
-				print(f'''Epoch {epoch_counter}, 
-						train accuracy is {train_acc}, train loss is {train_loss};
-						validation accuracy is {val_acc}, validation loss is {val_loss}''')
+				print('Train accuracy = {:.4f}'.format(train_acc), end='\t')
+				print('Train loss = {:.4f}'.format(train_loss))
+
+				step = self.sess.run(self.global_step)
+				print('step:', step)
+				summary_str = self.sess.run(self.train_accuracy_summary_op)
+				self.summary_writer.add_summary(summary_str, step)
+
+				if val_generator is not None:
+					val_acc, val_loss = self._calc_overall_metrics(val_generator)
+					summary_str = self.sess.run(self.validation_accuracy_summary_op)
+					self.summary_writer.add_summary(summary_str, step)
+					print('Validation accuracy = {:.4f}'.format(val_acc), end='\t')
+					print('Validation loss = {:.4f}'.format(val_loss))
 
 			x_batch, y_batch = train_generator.next()
+			assert(not np.isnan(x_batch).any() and not np.isnan(y_batch).any())
 
 			# One-hot encode labels
 			y_batch = tf.keras.utils.to_categorical(y_batch)

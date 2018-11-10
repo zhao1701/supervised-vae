@@ -19,7 +19,7 @@ IMG_CHANNELS = 3
 NUM_SAMPLES = 200
 CHECKPOINT_DIR = '../experiments/test/checkpoints/'
 LOG_DIR = '../experiments/test/logs/'
-TRAIN_DIR = '../data/processed/test/'
+TRAIN_DIR = '../data/processed/sample/'
 VALIDATION_DIR = '../data/processed/validation/'
 
 @pytest.fixture()
