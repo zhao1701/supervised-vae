@@ -10,7 +10,7 @@ sys.path.append('..')
 from svae import SVAE
 
 
-NUM_SAMPLES = 100
+NUM_SAMPLES = 10
 NUM_LATENTS = 32
 NUM_CLASSES = 2
 IMG_HEIGHT = 128
