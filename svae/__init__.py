@@ -477,8 +477,10 @@ class SVAE:
 					print('Validation loss = {:.4f}'.format(val_loss))
 
 					if val_acc > self.best_val_acc:
-						print('Best validation accuracy improved from {} to {}'.format(
-							self.best_val_acc, val_acc))
+						print(
+							'Best validation accuracy improved from '
+							'{:.4f} to {:.4f}'.format(self.best_val_acc, val_acc)
+						)
 						self.best_val_acc = val_acc
 						self._save_checkpoint()
 				else:
@@ -596,6 +598,16 @@ class SVAE:
 				if val_generator is not None:
 					val_loss = self._calc_decoder_metrics(val_generator)
 					print('Validation loss = {:.4f}'.format(val_loss))
+
+					if val_loss < self.best_val_recon_loss:
+						print(
+							'Best validation reconstruction loss improved '
+							'from {:.4f} to {:.4f}'.format(self.best_val_recon_loss, val_loss)
+						)
+						self.best_val_recon_loss = val_loss
+						self._save_checkpoint()
+				else:
+					self._save_checkpoint()
 
 			x_batch, y_batch = train_generator.next()
 			self._partial_fit_decoder(x_batch, learning_rate)
