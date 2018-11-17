@@ -49,12 +49,12 @@ for split, class_ in it.product(splits, classes):
 dfs = list()
 for source in SOURCES:
 
-	print(f'Unpacking data for {source}...')
+	print('Unpacking data for {}...'.format(source))
 	tar_path = os.path.join(SOURCE_DIR, f'{source}-cropped.tar')
 	with tarfile.open(tar_path) as tar:
 	 	tar.extractall(TEMP_DIR)
 
-	print(f'Reading metadata for {source}...')
+	print('Reading metadata for {}...'.format(source))
 	mat_path = os.path.join(
 		TEMP_DIR,
 		f'{source}_crop',
@@ -72,7 +72,7 @@ for source in SOURCES:
 	df['name'] = df['name'].apply(lambda x: x[0] if x.size == 1 else '')
 	dfs.append(df)
 
-	print(f'Processing files for {source}...')
+	print('Processing files for {}...'.format(source))
 	for gender, indicator in zip(['female', 'male'], [0, 1]):
 
 		# Get filenames for gender
@@ -90,19 +90,19 @@ for source in SOURCES:
 		train_val = int(num_files * TRAIN_PROP)
 		val_test = int(num_files * (TRAIN_PROP + VALIDATION_PROP))
 
-		print(f'Processing training data for {gender} class...')
+		print('Processing training data for {} class...'.format(gender))
 		df_gender_filenames_train = df_gender_filenames[:train_val]
 		train_gender_dest = os.path.join(DESTINATION_DIR, 'train', gender)
 		for file in df_gender_filenames_train:
 			shutil.copy2(file, train_gender_dest)
 
-		print(f'Processing validation data for {gender} class...')
+		print('Processing validation data for {} class...'.format(gender))
 		df_gender_filenames_val = df_gender_filenames[train_val:val_test]
 		val_gender_dest = os.path.join(DESTINATION_DIR, 'validation', gender)
 		for file in df_gender_filenames_val:
 			shutil.copy2(file, val_gender_dest)
 
-		print(f'Processing test data for {gender} class...')
+		print('Processing test data for {} class...'.format(gender))
 		df_gender_filenames_test = df_gender_filenames[val_test:]
 		test_gender_dest = os.path.join(DESTINATION_DIR, 'test', gender)
 		for file in df_gender_filenames_test:
