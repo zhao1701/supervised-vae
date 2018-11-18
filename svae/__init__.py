@@ -25,7 +25,6 @@ class SVAE:
 		self.sess = tf.Session()
 		self.sess.run(tf.global_variables_initializer())
 
-		
 		self._load_checkpoint()
 		self.summary_writer = tf.summary.FileWriter(log_dir, self.sess.graph)
 		self.best_val_acc = -float('inf')
@@ -53,6 +52,7 @@ class SVAE:
 						os.mkdir(self.checkpoint_dir)
 				
 	def _save_checkpoint(self):
+		print('checkpointing: {}'.format(self.checkpoint_dir))
 		self.saver.save(
 			self.sess,
 			self.checkpoint_dir,
@@ -401,7 +401,7 @@ class SVAE:
 			# print('Predicting batch {} of {}'.format(
 			# 	data_generator.batch_index,
 			# 	len(data_generator)))
-			
+
 			if data_generator.batch_index == 0:
 				break
 		acc = self.sess.run(self.accuracy)
@@ -541,7 +541,7 @@ class SVAE:
 		
 		traversals = list()
 		for index in range(len(latent_means)):
-			latent_means_copy = latent_means[:]
+			latent_means_copy = latent_means.copy()
 			traversal = list()
 			for new_val in np.linspace(-4, 4, 9):
 				latent_means_copy[index] = new_val
