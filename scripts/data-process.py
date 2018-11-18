@@ -50,15 +50,15 @@ dfs = list()
 for source in SOURCES:
 
 	print('Unpacking data for {}...'.format(source))
-	tar_path = os.path.join(SOURCE_DIR, f'{source}-cropped.tar')
+	tar_path = os.path.join(SOURCE_DIR, '{}-cropped.tar'.format(source))
 	with tarfile.open(tar_path) as tar:
 	 	tar.extractall(TEMP_DIR)
 
 	print('Reading metadata for {}...'.format(source))
 	mat_path = os.path.join(
 		TEMP_DIR,
-		f'{source}_crop',
-		f'{source}.mat')
+		'{}_crop'.format(source),
+		'{}.mat'.format(source))
 	mat = loadmat(mat_path)
 	mat = mat[source][0][0]
 	data = dict(
@@ -78,7 +78,7 @@ for source in SOURCES:
 		# Get filenames for gender
 		df_gender = df[df['gender'] == indicator]
 		df_gender_filenames = df_gender['filename'].apply(
-			lambda x: os.path.join(TEMP_DIR, f'{source}_crop', x))
+			lambda x: os.path.join(TEMP_DIR, '{}_crop'.format(source), x))
 		df_gender_filenames = df_gender_filenames.values
 
 		# Shuffle
