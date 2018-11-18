@@ -466,13 +466,13 @@ class SVAE:
 				epoch_counter += 1
 				print('Training classifier, epoch {}'.format(epoch_counter))
 
-				train_acc, train_loss = self._calc_classifier_metrics(train_generator)
-				print('Train accuracy = {:.4f}'.format(train_acc), end='\t')
-				print('Train loss = {:.4f}'.format(train_loss))
+				# train_acc, train_loss = self._calc_classifier_metrics(train_generator)
+				# print('Train accuracy = {:.4f}'.format(train_acc), end='\t')
+				# print('Train loss = {:.4f}'.format(train_loss))
 
 				step = self.sess.run(self.global_step)
-				summary_str = self.sess.run(self.train_accuracy_summary_op)
-				self.summary_writer.add_summary(summary_str, step)
+				# summary_str = self.sess.run(self.train_accuracy_summary_op)
+				# self.summary_writer.add_summary(summary_str, step)
 
 				if val_generator is not None:
 					val_acc, val_loss = self._calc_classifier_metrics(val_generator)
@@ -600,8 +600,8 @@ class SVAE:
 				epoch_counter += 1
 				print('Training decoder, epoch {}...'.format(epoch_counter))
 
-				train_loss = self._calc_decoder_metrics(train_generator)
-				print('Train loss = {:.4f}'.format(train_loss))
+				# train_loss = self._calc_decoder_metrics(train_generator)
+				# print('Train loss = {:.4f}'.format(train_loss))
 
 				x_batch, y_batch = train_generator.next()
 				check_image = x_batch[0]
