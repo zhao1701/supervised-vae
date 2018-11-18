@@ -319,12 +319,10 @@ class SVAE:
 			self.summary_ops_classifier_merged, feed_dict=feed_dict)
 		self.summary_writer.add_summary(summary_str, step)
 
-		# Debug
-		# print(self.sess.run(self.z_mean_test, feed_dict=feed_dict))
-		# print(
-		# 	'cross_entropy_loss:',
-		# 	self.sess.run(self.cross_entropy_loss, feed_dict=feed_dict)
-		# )
+		print(
+			'cross_entropy_loss:',
+			self.sess.run(self.cross_entropy_loss, feed_dict=feed_dict)
+		)
 
 	def fit_classifier(
 		self, x, y, num_epochs=5, batch_size=256,
@@ -382,7 +380,7 @@ class SVAE:
 
 		while True:
 			x_batch, y_batch = data_generator.next()
-			y_batch_cat = tf.keras.utils.to_categorical(y_batch)
+			y_batch_cat = tf.keras.utils.to_categorical(y_batch, num_classes=2)
 
 			feed_dict = {
 				self.x_input: x_batch,
@@ -490,7 +488,7 @@ class SVAE:
 			assert(not np.isnan(x_batch).any() and not np.isnan(y_batch).any())
 
 			# One-hot encode labels
-			y_batch = tf.keras.utils.to_categorical(y_batch)
+			y_batch = tf.keras.utils.to_categorical(y_batch, num_classes=2)
 
 			self._partial_fit_classifier(x_batch, y_batch, learning_rate, beta)
 
