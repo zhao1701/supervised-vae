@@ -353,7 +353,7 @@ class SVAE:
 			x_batches = [x[start:end] for start, end in indices]
 			y_batches = [y[start:end] for start, end in indices]
 			
-			print(f'Training epoch {epoch}...')
+			print('Training epoch {}...'.format(epoch))
 			# Iteratively train the classifier
 			for x_batch, y_batch in zip(x_batches, y_batches):
 				self._partial_fit_classifier(
@@ -575,7 +575,7 @@ class SVAE:
 			indices[-1][-1] = num_samples
 			x_batches = [x[start:end] for start, end in indices]
 			
-			print(f'Training epoch {epoch}...')
+			print('Training epoch {}...'.format(epoch))
 			# Iteratively train the decoder
 			for x_batch in x_batches:
 				self._partial_fit_decoder(x_batch, learning_rate)
@@ -588,7 +588,7 @@ class SVAE:
 		while epoch_counter < num_epochs:
 			if train_generator.batch_index == 0:
 				epoch_counter += 1
-				print(f'Training decoder, epoch {epoch_counter}...')
+				print('Training decoder, epoch {}...'.format(epoch_counter))
 
 				x_batch, y_batch = train_generator.next()
 				check_image = x_batch[0]
@@ -653,7 +653,7 @@ class SVAE:
 		y_predict_label = y_proba >=0.5
 		return y_predict_label
 
-	def predict_generator(self, generator, labels = True):
+	def predict_generator(self, generator, labels=True):
 		y_pred_batches = list()
 		y_batches = list()
 
