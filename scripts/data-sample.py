@@ -23,7 +23,7 @@ sample_dir = os.path.join(
 labels = os.listdir(TRAIN_DIR)
 num_labels = len(labels)
 num_samples_per_label = NUM_SAMPLES // num_labels
-print(f'Found {num_samples_per_label} labels: {labels}')
+print('Found {} labels: {}'.format(num_samples_per_label, labels))
 
 print('Creating samples...')
 for label in labels:
