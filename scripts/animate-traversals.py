@@ -26,11 +26,20 @@ parser.add_argument(
 	'--num_latents', type=int, default=32,
 	help='Number of latent components to traverse over.')
 parser.add_argument(
-	'--num_rows', type=int, default=3,
+	'--num_rows', type=int, default=5,
 	help='Number of rows in traversal grid.')
 parser.add_argument(
-	'--num_cols', type=int, default=3,
+	'--num_cols', type=int, default=5,
 	help='Number of columns in traversal grid.')
+parser.add_argument(
+	'--traversal_min', type=float, default=-6,
+	help='Lower bound of traversal range.')
+parser.add_argument(
+	'--traversal_max', type=float, default=6,
+	help='Upper bound of traversal range.')
+parser.add_argument(
+	'--traversal_resolution', type=int, default=25,
+	help='Number of increments in traversal range.')
 parser.add_argument(
 	'--img_height', type=int, default=128,
 	help='Height of image in pixels.')
@@ -51,6 +60,9 @@ NUM_COLS = args.num_cols
 IMG_HEIGHT = args.img_height
 IMG_WIDTH = args.img_width
 IMG_CHANNELS = args.img_channels
+TRAVERSAL_MIN = args.traversal_min
+TRAVERSAL_MAX = args.traversal_max
+TRAVERSAL_RESOLUTION = args.traversal_resolution
 
 num_imgs = NUM_ROWS * NUM_COLS
 checkpoint_dir = os.path.join(EXPERIMENT_DIR, 'checkpoints/')
@@ -81,7 +93,9 @@ svae = SVAE(
 latent_means = svae.compress(images)
 for latent_index in range(NUM_LATENTS):
 	grids = list()
-	for new_val in np.linspace(-4, 4, 17):
+	for new_val in np.linspace(
+		TRAVERSAL_MIN, TRAVERSAL_MAX, TRAVERSAL_RESOLUTION):
+	
 		latent_means_updated = latent_means.copy()
 		for latent_mean_vector in latent_means_updated:
 			latent_mean_vector[latent_index] = new_val
