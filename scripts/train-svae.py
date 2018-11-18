@@ -143,7 +143,7 @@ if not TEST:
 			train_datagen,
 			validation_datagen,
 			num_epochs=NUM_EPOCHS,
-			learning=LEARNING_RATE)
+			learning_rate=LEARNING_RATE)
 else:
 	print('Evaluating SVAE...')
 	accuracy, classifier_loss = svae._calc_classifier_metrics(test_datagen)

@@ -321,8 +321,11 @@ class SVAE:
 
 		print(
 			'cross_entropy_loss:',
-			self.sess.run(self.cross_entropy_loss, feed_dict=feed_dict)
-		)
+			self.sess.run(self.cross_entropy_loss, feed_dict=feed_dict),
+			end='\t')
+		print(
+			'latent_loss:',
+			self.sess.run(self.latent_loss, feed_dict=feed_dict))
 
 	def fit_classifier(
 		self, x, y, num_epochs=5, batch_size=256,
@@ -395,6 +398,10 @@ class SVAE:
 								feed_dict=feed_dict)
 			loss_list.append(batch_loss_realized)
 
+			# print('Predicting batch {} of {}'.format(
+			# 	data_generator.batch_index,
+			# 	len(data_generator)))
+			
 			if data_generator.batch_index == 0:
 				break
 		acc = self.sess.run(self.accuracy)
@@ -513,6 +520,11 @@ class SVAE:
 			self.summary_ops_decoder_merged, feed_dict=feed_dict)
 		self.summary_writer.add_summary(summary_str, step)
 
+		print(
+			'reconstruction_loss:',
+			self.sess.run(self.reconstruction_loss, feed_dict=feed_dict)
+		)
+
 	def _check_latent_traversals(self, image):
 		"""
 		Performs latent traversals on a single image and sends
@@ -588,12 +600,12 @@ class SVAE:
 				epoch_counter += 1
 				print('Training decoder, epoch {}...'.format(epoch_counter))
 
+				train_loss = self._calc_decoder_metrics(train_generator)
+				print('Train loss = {:.4f}'.format(train_loss))
+
 				x_batch, y_batch = train_generator.next()
 				check_image = x_batch[0]
 				self._check_latent_traversals(check_image)
-
-				train_loss = self._calc_decoder_metrics(train_generator)
-				print('Train loss = {:.4f}'.format(train_loss))
 
 				if val_generator is not None:
 					val_loss = self._calc_decoder_metrics(val_generator)
