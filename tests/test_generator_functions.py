@@ -1,6 +1,7 @@
 import os
 import sys
 import pytest
+import shutil
 
 import numpy as np
 
@@ -17,8 +18,8 @@ IMG_HEIGHT = 128
 IMG_WIDTH = 128
 IMG_CHANNELS = 3
 NUM_SAMPLES = 200
-CHECKPOINT_DIR = '../experiments/test/checkpoints/'
-LOG_DIR = '../experiments/test/logs/'
+CHECKPOINT_DIR = '../experiments/pytest/checkpoints/'
+LOG_DIR = '../experiments/pytest/logs/'
 TRAIN_DIR = '../data/processed/sample/'
 VALIDATION_DIR = '../data/processed/sample/'
 
@@ -39,7 +40,7 @@ def make_generators():
 		class_mode='binary')
 	return train_datagen, validation_datagen
 
-@pytest.fixture()
+# @pytest.fixture()
 def make_svae():
 	svae = SVAE(
 		CHECKPOINT_DIR, LOG_DIR,
@@ -47,25 +48,33 @@ def make_svae():
 		num_latents=NUM_LATENTS, num_classes=NUM_CLASSES)
 	return svae
 
+svae = make_svae()
 
-def test_fit_classifier_generator(make_svae, make_generators):
+def reset_resources():
+	directories = [CHECKPOINT_DIR, LOG_DIR]
+	for directory in directories:
+		if os.path.isdir(directory):
+			shutil.rmtree(directory)
+			os.makedirs(directory)
+
+def test_fit_classifier_generator(make_generators):
+	reset_resources()
 	train_gen, val_gen = make_generators
-	svae = make_svae
 	svae.fit_classifier_generator(train_gen, val_gen, num_epochs=2)
 
-def test_fit_decoder_generator(make_svae, make_generators):
+def test_fit_decoder_generator(make_generators):
+	reset_resources()
 	train_gen, val_gen = make_generators
-	svae = make_svae
 	svae.fit_decoder_generator(train_gen, num_epochs=2)
 
-def test_predict_generator(make_svae, make_generators):
+def test_predict_generator(make_generators):
+	reset_resources()
 	train_gen, val_gen = make_generators
-	svae = make_svae
 	y, y_pred = svae.predict_generator(val_gen)
 
-def test_calc_overall_metrics(make_svae, make_generators):
+def test_calc_overall_metrics(make_generators):
+	reset_resources()
 	train_gen, val_gen = make_generators
-	svae = make_svae
-	acc,loss = svae._calc_overall_metrics(train_gen)
+	acc,loss = svae._calc_classifier_metrics(train_gen)
 	assert(0 <= acc <= 1)
 	assert(loss > 0)
