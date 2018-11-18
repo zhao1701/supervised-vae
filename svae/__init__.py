@@ -589,6 +589,8 @@ class SVAE:
 			if train_generator.batch_index == 0:
 				epoch_counter += 1
 				print(f'Training decoder, epoch {epoch_counter}...')
+
+				x_batch, y_batch = train_generator.next()
 				check_image = x_batch[0]
 				self._check_latent_traversals(check_image)
 
@@ -608,8 +610,9 @@ class SVAE:
 						self._save_checkpoint()
 				else:
 					self._save_checkpoint()
+			else:
+				x_batch, y_batch = train_generator.next()
 
-			x_batch, y_batch = train_generator.next()
 			self._partial_fit_decoder(x_batch, learning_rate)
 				
 	def predict_proba(self, x):
