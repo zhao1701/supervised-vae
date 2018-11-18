@@ -75,8 +75,8 @@ LEARNING_RATE = args.learning_rate
 BATCH_SIZE = args.batch_size
 BETA = args.beta
 
-checkpoint_dir = os.path.join(EXPERIMENT_DIR, 'checkpoints')
-log_dir = os.path.join(EXPERIMENT_DIR, 'logs')
+checkpoint_dir = os.path.join(EXPERIMENT_DIR, 'checkpoints/')
+log_dir = os.path.join(EXPERIMENT_DIR, 'logs/')
 
 directories = [checkpoint_dir, log_dir]
 for directory in directories:
