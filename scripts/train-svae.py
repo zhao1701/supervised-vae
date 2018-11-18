@@ -1,7 +1,6 @@
 import os
 import sys
 import csv
-import pytest
 import shutil
 
 import numpy as np
@@ -81,8 +80,7 @@ log_dir = os.path.join(EXPERIMENT_DIR, 'logs')
 
 directories = [checkpoint_dir, log_dir]
 for directory in directories:
-	if os.path.isdir(directory):
-		shutil.rmtree(directory)
+	if not os.path.isdir(directory):
 		os.makedirs(directory)
 
 def make_svae():
