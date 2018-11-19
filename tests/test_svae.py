@@ -56,7 +56,7 @@ def test_predict_proba():
 def test_predict_labels():
 	probabilities = svae.predict_proba(X)
 	precitions = svae.predict_label(probabilities)
-	assert(precitions.shape == (NUM_SAMPLES, NUM_CLASSES))
+	assert(precitions.shape == (NUM_SAMPLES,))
 
 
 def test_compress():

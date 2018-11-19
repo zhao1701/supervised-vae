@@ -3,7 +3,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-class SVAE:
+class SVAE_MNIST:
 	
 	def __init__(
 		self, checkpoint_dir, log_dir, img_shape=(128, 128, 3),
@@ -73,16 +73,6 @@ class SVAE:
 			# Ex: filters=32, kernel_size=4, stride=2
 			x = tf.layers.Conv2D(32, 4, 2, 'same', activation=tf.nn.relu,)(x)
 			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
-			x = tf.layers.Conv2D(64, 4, 2, 'same', activation=tf.nn.relu,)(x)
-			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
-			x = tf.layers.Conv2D(128, 4, 2, 'same', activation=tf.nn.relu,)(x)
-			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
-			x = tf.layers.Conv2D(128, 4, 2, 'same', activation=tf.nn.relu,)(x)
-			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
-			x = tf.layers.Conv2D(256, 4, 2, 'same', activation=tf.nn.relu,)(x)
-			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
-			x = tf.layers.Conv2D(512, 4, activation=tf.nn.relu,)(x)
-			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
 
 			# Final convolutions downsize each channels' dimensions to a 1x1 patch,
 			# resulting in a final tensors with shape (batch_size, 1, 1, num_latents)
@@ -115,26 +105,6 @@ class SVAE:
 
 			# Ex: filters=32, kernel_size=1, stride=1
 			z = tf.layers.Conv2DTranspose(
-				512, 1, 1, 'valid', activation=tf.nn.relu,)(z)
-			z = tf.layers.BatchNormalization(
-				axis=-1, momentum=0.1, epsilon=1e-5)(z)
-			z = tf.layers.Conv2DTranspose(
-				256, 4, 1, 'valid', activation=tf.nn.relu,)(z)
-			z = tf.layers.BatchNormalization(
-				axis=-1, momentum=0.1, epsilon=1e-5)(z)
-			z = tf.layers.Conv2DTranspose(
-				128, 4, 2, 'same', activation=tf.nn.relu,)(z)
-			z = tf.layers.BatchNormalization(
-				axis=-1, momentum=0.1, epsilon=1e-5)(z)
-			z = tf.layers.Conv2DTranspose(
-				128, 4, 2, 'same', activation=tf.nn.relu,)(z)
-			z = tf.layers.BatchNormalization(
-				axis=-1, momentum=0.1, epsilon=1e-5)(z)
-			z = tf.layers.Conv2DTranspose(
-				64, 4, 2, 'same', activation=tf.nn.relu,)(z)
-			z = tf.layers.BatchNormalization(
-				axis=-1, momentum=0.1, epsilon=1e-5)(z)
-			z = tf.layers.Conv2DTranspose(
 				32, 4, 2, 'same', activation=tf.nn.relu,)(z)
 			x = tf.layers.Conv2DTranspose(
 				3, 4, 2, 'same', activation=None,)(z)
@@ -166,7 +136,7 @@ class SVAE:
 		self.x_input = tf.placeholder(
 			tf.float32, shape=[None, height, width, channels], name='x_input')
 		self.y_input = tf.placeholder(
-			tf.float32, shape=[None, self.num_classes], name='y_input')
+			tf.float32, shape=[None, 2], name='y_input')
 		self.learning_rate = tf.placeholder(
 			tf.float32, name='learning_rate')
 		self.beta = tf.placeholder(
@@ -202,7 +172,9 @@ class SVAE:
 			
 	def _create_classifier_network(self, z):
 		with tf.variable_scope('classifier', reuse=tf.AUTO_REUSE):
-			y_logits = tf.layers.Dense(self.num_classes, name='y_logits')(z)
+			y_logits = tf.layers.Dense(512, activation=tf.nn.relu)(z)
+			y_logits = tf.layers.dropout(rate=0.2)(y_logits)
+			y_logits = tf.layers.Dense(self.num_classes, name='y_logits')(y_logits)
 		return y_logits
 	
 	def _create_losses(self):
@@ -282,10 +254,10 @@ class SVAE:
 			global_step=self.global_step)
 
 	def _create_metrics(self):
-		y_labels = tf.argmax(self.y_input, axis=1)
+
 		self.accuracy, self.accuracy_update = tf.metrics.accuracy(
 			predictions=self.y_pred_labels,
-			labels=y_labels, name="accuracy")
+			labels=self.y_input, name="accuracy")
 		self.running_vars = tf.get_collection(
 			tf.GraphKeys.LOCAL_VARIABLES, scope=tf.get_variable_scope().name)
 		# print(self.running_vars)
@@ -660,7 +632,7 @@ class SVAE:
 		prediction_labels : array, shape = [batch_size, num_classes]
 			A matrix of <batch_size> predicted labels.
 		"""
-		y_predict_label = tf.argmax(y_proba, axis=1)
+		y_predict_label = y_proba >=0.5
 		return y_predict_label
 
 	def predict_generator(self, generator, labels=True):
