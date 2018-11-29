@@ -8,7 +8,7 @@ import argparse as ap
 
 sys.path.append('..')
 
-from svae_celeba import SVAE
+from svae import SVAE
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import precision_score, recall_score, roc_auc_score
 
