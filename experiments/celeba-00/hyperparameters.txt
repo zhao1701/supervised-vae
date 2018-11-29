@@ -1,0 +1,12 @@
+CLASSIFIER==========num_epochs: 20
+batch_size: 128
+learning_rate: 1e-05
+beta: 1
+num_latents: 1
+
+DECODER==========num_epochs: 20
+batch_size: 128
+learning_rate: 1e-05
+beta: 1
+num_latents: 1
+

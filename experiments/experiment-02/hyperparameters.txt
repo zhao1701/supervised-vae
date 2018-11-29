@@ -1,0 +1,6 @@
+CLASSIFIER==========num_epochs: 10
+batch_size: 128
+learning_rate: 1e-05
+beta: 0.001
+num_latents: 0.001
+
