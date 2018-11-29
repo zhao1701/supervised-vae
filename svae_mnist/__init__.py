@@ -3,11 +3,11 @@ import os
 import numpy as np
 import tensorflow as tf
 
-class SVAE_MNIST:
+class SVAE:
 	
 	def __init__(
-		self, checkpoint_dir, log_dir, img_shape=(128, 128, 3),
-		num_latents=32, num_classes=2):
+		self, checkpoint_dir, log_dir, img_shape=(32, 32, 1),
+		num_latents=32, num_classes=10):
 		
 		self.checkpoint_dir = checkpoint_dir
 		self.img_shape = img_shape
@@ -73,7 +73,12 @@ class SVAE_MNIST:
 			# Ex: filters=32, kernel_size=4, stride=2
 			x = tf.layers.Conv2D(32, 4, 2, 'same', activation=tf.nn.relu,)(x)
 			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
-
+			x = tf.layers.Conv2D(64, 4, 2, 'same', activation=tf.nn.relu,)(x)
+			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
+			x = tf.layers.Conv2D(128, 4, 2, 'same', activation=tf.nn.relu,)(x)
+			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
+			x = tf.layers.Conv2D(128, 4, activation=tf.nn.relu,)(x)
+			x = tf.layers.BatchNormalization(axis=-1, momentum=0.1, epsilon=1e-5)(x)
 			# Final convolutions downsize each channels' dimensions to a 1x1 patch,
 			# resulting in a final tensors with shape (batch_size, 1, 1, num_latents)
 			z_mean = tf.layers.Conv2D(self.num_latents, 1)(x)
@@ -105,9 +110,23 @@ class SVAE_MNIST:
 
 			# Ex: filters=32, kernel_size=1, stride=1
 			z = tf.layers.Conv2DTranspose(
-				32, 4, 2, 'same', activation=tf.nn.relu,)(z)
+				128, 1, 1, 'valid', activation=tf.nn.relu,)(z)
+			z = tf.layers.BatchNormalization(
+				axis=-1, momentum=0.1, epsilon=1e-5)(z)
+			z = tf.layers.Conv2DTranspose(
+				128, 4, 1, 'valid', activation=tf.nn.relu,)(z)
+			z = tf.layers.BatchNormalization(
+				axis=-1, momentum=0.1, epsilon=1e-5)(z)
+			z = tf.layers.Conv2DTranspose(
+				64, 4, 2, 'same', activation=tf.nn.relu,)(z)
+			z = tf.layers.BatchNormalization(
+				axis=-1, momentum=0.1, epsilon=1e-5)(z)
+			z = tf.layers.Conv2DTranspose(
+				128, 4, 2, 'same', activation=tf.nn.relu,)(z)
+			z = tf.layers.BatchNormalization(
+				axis=-1, momentum=0.1, epsilon=1e-5)(z)
 			x = tf.layers.Conv2DTranspose(
-				3, 4, 2, 'same', activation=None,)(z)
+				self.img_shape[-1], 4, 2, 'same', activation=None,)(z)
 
 			x_out_logit = tf.identity(x, name='x_out_logit')
 
@@ -136,7 +155,7 @@ class SVAE_MNIST:
 		self.x_input = tf.placeholder(
 			tf.float32, shape=[None, height, width, channels], name='x_input')
 		self.y_input = tf.placeholder(
-			tf.float32, shape=[None, 2], name='y_input')
+			tf.float32, shape=[None, self.num_classes], name='y_input')
 		self.learning_rate = tf.placeholder(
 			tf.float32, name='learning_rate')
 		self.beta = tf.placeholder(
@@ -172,9 +191,7 @@ class SVAE_MNIST:
 			
 	def _create_classifier_network(self, z):
 		with tf.variable_scope('classifier', reuse=tf.AUTO_REUSE):
-			y_logits = tf.layers.Dense(512, activation=tf.nn.relu)(z)
-			y_logits = tf.layers.dropout(rate=0.2)(y_logits)
-			y_logits = tf.layers.Dense(self.num_classes, name='y_logits')(y_logits)
+			y_logits = tf.layers.Dense(self.num_classes, name='y_logits')(z)
 		return y_logits
 	
 	def _create_losses(self):
@@ -234,7 +251,7 @@ class SVAE_MNIST:
 			'validation accuracy', self.accuracy)
 
 		self.traversals = tf.placeholder(
-			tf.float32, (None, None, None, 3))
+			tf.float32, (None, None, None, self.img_shape[-1]))
 		self.traversals_summary_op = tf.summary.image(
 			'traversal_check', self.traversals, max_outputs=1)
 			
@@ -255,9 +272,13 @@ class SVAE_MNIST:
 
 	def _create_metrics(self):
 
+		y_pred_labels = tf.cast(self.y_pred_labels, dtype=tf.float32)
+		y_pred_labels_encoded = tf.argmax(y_pred_labels, axis=1)
+		y_labels_encoded = tf.argmax(self.y_input, axis=1)
+
 		self.accuracy, self.accuracy_update = tf.metrics.accuracy(
-			predictions=self.y_pred_labels,
-			labels=self.y_input, name="accuracy")
+			predictions=y_pred_labels_encoded,
+			labels=y_labels_encoded, name="accuracy")
 		self.running_vars = tf.get_collection(
 			tf.GraphKeys.LOCAL_VARIABLES, scope=tf.get_variable_scope().name)
 		# print(self.running_vars)
@@ -355,7 +376,8 @@ class SVAE_MNIST:
 
 		while True:
 			x_batch, y_batch = data_generator.next()
-			y_batch_cat = tf.keras.utils.to_categorical(y_batch, num_classes=2)
+			y_batch_cat = tf.keras.utils.to_categorical(
+				y_batch, num_classes=self.num_classes)
 
 			feed_dict = {
 				self.x_input: x_batch,
@@ -438,13 +460,13 @@ class SVAE_MNIST:
 				epoch_counter += 1
 				print('Training classifier, epoch {}'.format(epoch_counter))
 
-				# train_acc, train_loss = self._calc_classifier_metrics(train_generator)
-				# print('Train accuracy = {:.4f}'.format(train_acc), end='\t')
-				# print('Train loss = {:.4f}'.format(train_loss))
+				train_acc, train_loss = self._calc_classifier_metrics(train_generator)
+				print('Train accuracy = {:.4f}'.format(train_acc), end='\t')
+				print('Train loss = {:.4f}'.format(train_loss))
 
 				step = self.sess.run(self.global_step)
-				# summary_str = self.sess.run(self.train_accuracy_summary_op)
-				# self.summary_writer.add_summary(summary_str, step)
+				summary_str = self.sess.run(self.train_accuracy_summary_op)
+				self.summary_writer.add_summary(summary_str, step)
 
 				if val_generator is not None:
 					val_acc, val_loss = self._calc_classifier_metrics(val_generator)
@@ -467,7 +489,8 @@ class SVAE_MNIST:
 			assert(not np.isnan(x_batch).any() and not np.isnan(y_batch).any())
 
 			# One-hot encode labels
-			y_batch = tf.keras.utils.to_categorical(y_batch, num_classes=2)
+			y_batch = tf.keras.utils.to_categorical(
+				y_batch, num_classes=self.num_classes)
 
 			self._partial_fit_classifier(x_batch, y_batch, learning_rate, beta)
 
@@ -526,6 +549,7 @@ class SVAE_MNIST:
 			traversals.append(traversal)
 		# Combine traversals, resulting in a matrix of images
 		traversals = np.row_stack(traversals)
+		traversals = np.expand_dims(traversals, -1) # Add channel dimension
 		traversals = np.expand_dims(traversals, 0) # Add batch dimension
 
 		# Send traversal matrix to Tensorboard
@@ -641,7 +665,8 @@ class SVAE_MNIST:
 
 		while True:
 			x_batch, y_batch = generator.next()
-			y_batch = tf.keras.utils.to_categorical(y_batch, num_classes=2)
+			y_batch = tf.keras.utils.to_categorical(
+				y_batch, num_classes=self.num_classes)
 			y_batches.append(y_batch)
 			y_pred_batch_proba = self.predict_proba(x_batch)
 			if labels == False:
