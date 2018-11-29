@@ -35,13 +35,14 @@ parser.add_argument(
 	'--beta', type=float, default=1,
 	help='Amount by which to weight latent loss in classifier loss.')
 parser.add_argument(
-	'--train_dir', type=str, default='../data/processed/train/',
+	'--train_dir', type=str, default='../data/processed/celeba/train/',
 	help='Directory containing the training data.')
 parser.add_argument(
-	'--validation_dir', type=str, default='../data/processed/validation/',
+	'--validation_dir', type=str,
+	default='../data/processed/celeba/validation/',
 	help='Directory containing the validation data.')
 parser.add_argument(
-	'--test_dir', type=str, default='../data/processed/test/',
+	'--test_dir', type=str, default='../data/processed/celeba/test/',
 	help='Directory containing the test data.')
 parser.add_argument(
 	'--num_latents', type=int, default=32,
