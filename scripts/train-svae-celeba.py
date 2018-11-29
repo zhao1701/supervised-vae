@@ -23,7 +23,7 @@ parser.add_argument(
 	'--test', action='store_true',
 	help='Loads and evaluates the SVAE on the test set.')
 parser.add_argument(
-	'--learning_rate', type=float, default=1e-4,
+	'--learning_rate', type=float, default=1e-5,
 	help='Learning rate during model training.')
 parser.add_argument(
 	'--batch_size', type=int, default=128,
