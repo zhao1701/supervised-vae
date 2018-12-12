@@ -123,3 +123,29 @@ Same as above, but use **train-save-celeba.py**.
 python testpad.py
 ```
 There is no command-line argument wrapper around the above script, so hyperparameters and training options must be edited from within the script, though they follow the conventions laid out by the more polished train-svae and train-svae-celeba scripts.
+
+### Animating latent traversals
+
+First, you need to sample some number of images from the training split of the dataset.
+
+```
+python data-sample.py -n 25 -t ../data/CELEBA/train
+```
+This will create a ```sample/``` folder on the same level as the folders housing the data from other splits.
+
+Point the following script to the experiment directory containing the saved model for either IMDB/WIKI or CELEB-A:
+
+```
+python animate-traversals.py --experiment_dir ../experiments/my-first-experiment/
+```
+
+For the MNIST dataset, a separate script is used:
+```
+python animate-traversals-mnist.py --experiment_dir ../experiments/my-first-mnist-experiment/
+```
+
+A number of options are available for customizing the resolution and range of the traversals. Explore them with:
+```
+python animate-traversals.py --help
+```
+
