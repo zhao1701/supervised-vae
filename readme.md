@@ -52,46 +52,14 @@ While the quality of latent traversals was not what we hoped for, we found surpr
     └── tests              <- Pytest testing suites
 --------
 
-### Package Management
+### Dependencies
 
-Use conda to maintain a virtual environment.
-
-### Style Guide
-
-Follow [PEP 8][], when sensible.
-
-#### Naming
-
-- Variables, functions, methods, packages, modules
-    - `lower_case_with_underscores`
-- Classes and Exceptions
-    - `CapWords`
-- Protected methods and internal functions
-    - `_single_leading_underscore(self, ...)`
-- Private methods
-    - `__double_leading_underscore(self, ...)`
-- Constants
-    - `ALL_CAPS_WITH_UNDERSCORES`
-
-#### Line lengths
-
-80 characters maximum per line.
-
-Use parentheses for line continuations.
-
-```python
-wiki = (
-    "The Colt Python is a .357 Magnum caliber revolver formerly manufactured "
-    "by Colt's Manufacturing Company of Hartford, Connecticut. It is sometimes "
-    'referred to as a "Combat Magnum". It was first introduced in 1955, the '
-    "same year as Smith & Wesson's M29 .44 Magnum."
-)
-```
-
-#### Indentation
-
-Use **two** spaces instead of four as Tensorflow code can be very long.
-
-#### Documentation
-
-Use numpy-style documentation. 
+- tensorflow
+- keras
+- imageio
+- argparse
+- requests
+- tarfile
+- numpy
+- scipy
+- pandas
