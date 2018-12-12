@@ -1,4 +1,13 @@
 # Supervised Variational Autoencoders
+In the video below for Columbia University's COMS 4995: Applied Deep Learning course, we present some background for the use of variational autoencoders (VAEs) in gaining neural network interpretability and experiment with a new architecture to apply VAE concepts to a supervised setting.
+
+[![Project overview video](https://img.youtube.com/vi/x294DLH3-Cs/0.jpg)](https://www.youtube.com/watch?v=x294DLH3-Cs)
+
+While the quality of latent traversals was not what we hoped for, we found surprising and preliminary results showing that the variational layer may behave as an effective regularizer.
+
+Contributors: Ramy Fahim, Serena Zhang, Derek Zhao
+Mentors: Josh Gordon (Google), Loc Tran (NASA Langley Research Center)
+Locations: Viacom
 
 ### Project Organization
 
