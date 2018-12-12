@@ -113,3 +113,13 @@ For additional information:
 ```
 python train-svae.py --help
 ```
+
+### Training an SVAE on CELEB-A data
+Same as above, but use **train-save-celeba.py**.
+
+### Training an SVAE on MNIST data
+```cd``` to the ```svae_mnist/``` directory.
+```
+python testpad.py
+```
+There is no command-line argument wrapper around the above script, so hyperparameters and training options must be edited from within the script, though they follow the conventions laid out by the more polished train-svae and train-svae-celeba scripts.
