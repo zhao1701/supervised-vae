@@ -138,6 +138,7 @@ Point the following script to the experiment directory containing the saved mode
 ```
 python animate-traversals.py --experiment_dir ../experiments/my-first-experiment/
 ```
+A new folder called ```traversals/``` will be created within the experiment directory; it will contain animated gifs of each latent traversal.
 
 For the MNIST dataset, a separate script is used:
 ```
