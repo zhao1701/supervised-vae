@@ -53,7 +53,7 @@ While the quality of latent traversals was not what we hoped for, we found surpr
 --------
 
 ### Dependencies
-
+- python3
 - tensorflow
 - keras
 - imageio
@@ -63,3 +63,53 @@ While the quality of latent traversals was not what we hoped for, we found surpr
 - numpy
 - scipy
 - pandas
+
+### Downloading and processing IMDB/WIKI data
+To download the IMDB/WIKI dataset:
+```
+python data-download.py
+```
+
+To process the IMDB/WIKI dataset for eventual ingestion by Keras ImageDataGenerator:
+```
+python data-process.py
+```
+
+You can specify train/validation/test splits through the following flags, though the defaults should be sufficient. The test proportion is inferred.
+```
+python data-process.py --train_prop 0.8 --validation_prop 0.1
+```
+
+For additional information:
+```
+python data-process.py --help
+```
+
+### Downloading and processing CELEB-A data
+
+```
+sh download_celebA.sh
+```
+
+### Training an SVAE on IMDB/WIKI data
+All saved models are co-located with relevant Tensorboard logs, hyperparameter logs, and evaluation results in a unique experiment directory given at time of training. If the experiment directory already exists and contains a checkpoint, then that checkpoint is loaded to extend training rather than create a new model.
+
+To train the encoder and classifier networks with default hyperparameters:
+```
+python train-svae.py --experiment_dir ../experiments/my-first-experiment/
+```
+
+To train the decoder network with default hyperparameters:
+```
+python train-svae.py --experiment_dir ../experiments/my-first-experiment/ --decoder
+```
+
+To evaluate a trained model on the test set:
+```
+python train-svae.py --experiment_dir ../experiments/my-first-experiment/ --test
+```
+
+For additional information:
+```
+python train-svae.py --help
+```
